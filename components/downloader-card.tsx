@@ -79,7 +79,15 @@ export function DownloaderCard() {
   return (
     <main className={styles.page}>
       <section className={styles.hero}>
-        <div className={styles.badge}>BaixarYB</div>
+        <div className={styles.badgeLogo}>
+          <Image
+            src="/yb-circle.svg"
+            alt="Logo circular do BaixarYB"
+            fill
+            sizes="88px"
+            priority
+          />
+        </div>
         <h1 className={styles.title}>Baixe videos do YouTube com qualidade escolhida</h1>
         <p className={styles.subtitle}>
           Cole o link, veja a capa, o nome do canal e escolha a qualidade de
