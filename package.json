@@ -12,7 +12,8 @@
     "@distube/ytdl-core": "^4.16.12",
     "next": "15.5.14",
     "react": "19.0.0",
-    "react-dom": "19.0.0"
+    "react-dom": "19.0.0",
+    "youtubei.js": "^17.0.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",

@@ -10,7 +10,7 @@ import {
 import {
   buildSafeFileName,
   findFormatByItag,
-  getVideoInfo,
+  getDownloadInfo,
   isAllowedMediaRedirect,
   validateYouTubeUrl
 } from "@/lib/youtube";
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     const { url, itag } = readDownloadToken(token);
     validateYouTubeUrl(url);
-    const { info } = await getVideoInfo(url);
+    const info = await getDownloadInfo(url);
     const format = findFormatByItag(info.formats, itag);
 
     if (!format?.url) {
