@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { extractYouTubeVideoId } from "@/lib/youtube-link";
 import styles from "./downloader-card.module.css";
 
@@ -11,7 +11,8 @@ type VideoFormat = {
   container: string;
   fps: number | null;
   approxSize: string;
-  downloadUrl: string;
+  hasAudio: boolean;
+  downloadToken: string;
 };
 
 type AudioFormat = {
@@ -20,7 +21,7 @@ type AudioFormat = {
   container: string;
   approxSize: string;
   audioBitrate: number | null;
-  downloadUrl: string;
+  downloadToken: string;
 };
 
 type VideoResponse = {
@@ -36,18 +37,52 @@ type VideoResponse = {
   audioFormats: AudioFormat[];
 };
 
+type DownloadMode = "audio" | "video";
+
+type DownloadState = {
+  status: "idle" | "downloading" | "done" | "error";
+  progress: number;
+  indeterminate: boolean;
+  message: string | null;
+};
+
+const initialDownloadState: DownloadState = {
+  status: "idle",
+  progress: 0,
+  indeterminate: false,
+  message: null
+};
+
 export function DownloaderCard() {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [video, setVideo] = useState<VideoResponse | null>(null);
   const [previewVideoId, setPreviewVideoId] = useState<string | null>(null);
+  const [downloadMode, setDownloadMode] = useState<DownloadMode>("audio");
+  const [selectedVideoItag, setSelectedVideoItag] = useState<number | null>(null);
+  const [downloadState, setDownloadState] = useState<DownloadState>(initialDownloadState);
+
+  const selectedVideoFormat = useMemo(() => {
+    if (!video) {
+      return null;
+    }
+
+    return (
+      video.videoFormats.find((format) => format.itag === selectedVideoItag) ??
+      video.videoFormats[0] ??
+      null
+    );
+  }, [selectedVideoItag, video]);
+
+  const bestAudioFormat = video?.audioFormats[0] ?? null;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
     setError(null);
     setVideo(null);
+    setDownloadState(initialDownloadState);
     setPreviewVideoId(extractYouTubeVideoId(url));
 
     try {
@@ -67,12 +102,120 @@ export function DownloaderCard() {
 
       setVideo(payload);
       setPreviewVideoId(payload.videoId);
+      setDownloadMode(payload.audioFormats.length > 0 ? "audio" : "video");
+      setSelectedVideoItag(payload.videoFormats[0]?.itag ?? null);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Ocorreu um erro inesperado.";
       setError(message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDownload(token: string, fallbackName: string) {
+    setDownloadState({
+      status: "downloading",
+      progress: 0,
+      indeterminate: false,
+      message: "Preparando download..."
+    });
+
+    try {
+      const response = await fetch(
+        `/api/download?token=${encodeURIComponent(token)}&stream=1`
+      );
+
+      if (!response.ok) {
+        let message = "Nao foi possivel iniciar o download.";
+
+        try {
+          const payload = await response.json();
+          message = payload.error ?? message;
+        } catch {
+          message = "Nao foi possivel iniciar o download.";
+        }
+
+        throw new Error(message);
+      }
+
+      if (!response.body) {
+        throw new Error("O navegador nao conseguiu ler o arquivo para baixar.");
+      }
+
+      const totalBytes = Number.parseInt(
+        response.headers.get("content-length") || "0",
+        10
+      );
+      const contentType =
+        response.headers.get("content-type") || "application/octet-stream";
+      const fileName =
+        getFileNameFromHeader(response.headers.get("content-disposition")) ||
+        fallbackName;
+
+      const reader = response.body.getReader();
+      const chunks: ArrayBuffer[] = [];
+      let receivedBytes = 0;
+
+      setDownloadState({
+        status: "downloading",
+        progress: 0,
+        indeterminate: !Number.isFinite(totalBytes) || totalBytes <= 0,
+        message: "Baixando arquivo..."
+      });
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          break;
+        }
+
+        if (!value) {
+          continue;
+        }
+
+        chunks.push(
+          value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength) as ArrayBuffer
+        );
+        receivedBytes += value.length;
+
+        if (totalBytes > 0) {
+          setDownloadState({
+            status: "downloading",
+            progress: Math.min((receivedBytes / totalBytes) * 100, 100),
+            indeterminate: false,
+            message: "Baixando arquivo..."
+          });
+        }
+      }
+
+      const blob = new Blob(chunks, { type: contentType });
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(objectUrl);
+
+      setDownloadState({
+        status: "done",
+        progress: 100,
+        indeterminate: false,
+        message: "Download concluido."
+      });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Ocorreu um erro no download.";
+
+      setDownloadState({
+        status: "error",
+        progress: 0,
+        indeterminate: false,
+        message
+      });
     }
   }
 
@@ -158,57 +301,178 @@ export function DownloaderCard() {
 
               <h2 className={styles.videoTitle}>{video.title}</h2>
 
-              <div className={styles.downloadColumns}>
-                <section className={styles.downloadSection}>
-                  <div className={styles.sectionHead}>
-                    <h3 className={styles.sectionTitle}>Qualidade de video</h3>
-                    <span className={styles.sectionHint}>
-                      {video.videoFormats.length} opcoes
-                    </span>
-                  </div>
-                  <div className={styles.qualityGrid}>
-                    {video.videoFormats.map((format) => (
-                      <a
-                        key={format.itag}
-                        href={format.downloadUrl}
-                        className={styles.qualityLink}
-                      >
-                        <strong>{format.qualityLabel}</strong>
-                        <span>{format.container.toUpperCase()}</span>
-                        <span>{format.fps ? `${format.fps} FPS` : "FPS padrao"}</span>
-                        <span>{format.approxSize}</span>
-                      </a>
-                    ))}
-                  </div>
-                </section>
-
-                <section className={styles.downloadSection}>
-                  <div className={styles.sectionHead}>
-                    <h3 className={styles.sectionTitle}>Audio</h3>
-                    <span className={styles.sectionHint}>
-                      {video.audioFormats.length} opcoes
-                    </span>
-                  </div>
-                  <div className={styles.audioGrid}>
-                    {video.audioFormats.map((format) => (
-                      <a
-                        key={format.itag}
-                        href={format.downloadUrl}
-                        className={styles.audioLink}
-                      >
-                        <strong>{format.audioLabel}</strong>
-                        <span>{format.container.toUpperCase()}</span>
-                        <span>{format.audioBitrate ? `${format.audioBitrate} kbps` : "Bitrate padrao"}</span>
-                        <span>{format.approxSize}</span>
-                      </a>
-                    ))}
-                  </div>
-                </section>
+              <div className={styles.modeTabs}>
+                <button
+                  type="button"
+                  className={downloadMode === "audio" ? styles.modeButtonActive : styles.modeButton}
+                  onClick={() => {
+                    setDownloadMode("audio");
+                    setDownloadState(initialDownloadState);
+                  }}
+                >
+                  Audio
+                </button>
+                <button
+                  type="button"
+                  className={downloadMode === "video" ? styles.modeButtonActive : styles.modeButton}
+                  onClick={() => {
+                    setDownloadMode("video");
+                    setDownloadState(initialDownloadState);
+                  }}
+                >
+                  Video
+                </button>
               </div>
+
+              <section className={styles.actionPanel}>
+                {downloadMode === "audio" ? (
+                  bestAudioFormat ? (
+                    <>
+                      <div className={styles.singleDownloadCard}>
+                        <div>
+                          <strong className={styles.downloadHeading}>Melhor audio disponivel</strong>
+                          <p className={styles.downloadText}>
+                            {bestAudioFormat.audioLabel} • {bestAudioFormat.container.toUpperCase()} •{" "}
+                            {bestAudioFormat.approxSize}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          className={styles.downloadPrimary}
+                          disabled={downloadState.status === "downloading"}
+                          onClick={() =>
+                            handleDownload(
+                              bestAudioFormat.downloadToken,
+                              `${video.title} - audio.${bestAudioFormat.container}`
+                            )
+                          }
+                        >
+                          {downloadState.status === "downloading"
+                            ? "Baixando audio..."
+                            : "Baixar audio"}
+                        </button>
+                      </div>
+                      <DownloadProgress state={downloadState} />
+                    </>
+                  ) : (
+                    <p className={styles.emptyState}>
+                      Esse video nao trouxe uma faixa de audio separada para download.
+                    </p>
+                  )
+                ) : (
+                  <>
+                    <div className={styles.sectionHead}>
+                      <h3 className={styles.sectionTitle}>Escolha a qualidade do video</h3>
+                      <span className={styles.sectionHint}>
+                        Da maxima disponivel ate a minima
+                      </span>
+                    </div>
+
+                    <div className={styles.qualityPicker}>
+                      {video.videoFormats.map((format) => (
+                        <button
+                          type="button"
+                          key={format.itag}
+                          onClick={() => {
+                            setSelectedVideoItag(format.itag);
+                            setDownloadState(initialDownloadState);
+                          }}
+                          className={
+                            selectedVideoFormat?.itag === format.itag
+                              ? styles.qualityOptionActive
+                              : styles.qualityOption
+                          }
+                        >
+                          <strong>{format.qualityLabel}</strong>
+                          <span>{format.container.toUpperCase()}</span>
+                          <span>{format.fps ? `${format.fps} FPS` : "FPS padrao"}</span>
+                          <span>{format.approxSize}</span>
+                          <span>{format.hasAudio ? "Com audio" : "Sem audio"}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {selectedVideoFormat ? (
+                      <>
+                        <div className={styles.singleDownloadCard}>
+                          <div>
+                            <strong className={styles.downloadHeading}>
+                              Video selecionado: {selectedVideoFormat.qualityLabel}
+                            </strong>
+                            <p className={styles.downloadText}>
+                              {selectedVideoFormat.container.toUpperCase()} •{" "}
+                              {selectedVideoFormat.fps ? `${selectedVideoFormat.fps} FPS` : "FPS padrao"} •{" "}
+                              {selectedVideoFormat.approxSize}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            className={styles.downloadPrimary}
+                            disabled={downloadState.status === "downloading"}
+                            onClick={() =>
+                              handleDownload(
+                                selectedVideoFormat.downloadToken,
+                                `${video.title} - ${selectedVideoFormat.qualityLabel}.${selectedVideoFormat.container}`
+                              )
+                            }
+                          >
+                            {downloadState.status === "downloading"
+                              ? "Baixando video..."
+                              : "Baixar video"}
+                          </button>
+                        </div>
+                        {!selectedVideoFormat.hasAudio ? (
+                          <p className={styles.warningText}>
+                            Essa qualidade veio sem audio no mesmo arquivo. Isso acontece em algumas
+                            resolucoes altas do YouTube.
+                          </p>
+                        ) : null}
+                        <DownloadProgress state={downloadState} />
+                      </>
+                    ) : null}
+                  </>
+                )}
+              </section>
             </div>
           </article>
         ) : null}
       </section>
     </main>
   );
+}
+
+function DownloadProgress({ state }: { state: DownloadState }) {
+  if (state.status === "idle") {
+    return null;
+  }
+
+  return (
+    <div className={styles.progressBlock}>
+      <div className={styles.progressMeta}>
+        <span>{state.message}</span>
+        {!state.indeterminate ? <span>{Math.round(state.progress)}%</span> : null}
+      </div>
+      <div className={styles.progressTrack}>
+        <div
+          className={state.indeterminate ? styles.progressFillIndeterminate : styles.progressFill}
+          style={state.indeterminate ? undefined : { width: `${state.progress}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function getFileNameFromHeader(contentDisposition: string | null) {
+  if (!contentDisposition) {
+    return null;
+  }
+
+  const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+
+  if (utf8Match?.[1]) {
+    return decodeURIComponent(utf8Match[1]);
+  }
+
+  const simpleMatch = contentDisposition.match(/filename="([^"]+)"/i);
+  return simpleMatch?.[1] ?? null;
 }

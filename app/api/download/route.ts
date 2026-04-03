@@ -7,7 +7,13 @@ import {
   noStoreJson,
   toErrorResponse
 } from "@/lib/http";
-import { findFormatByItag, getVideoInfo, isAllowedMediaRedirect, validateYouTubeUrl } from "@/lib/youtube";
+import {
+  buildSafeFileName,
+  findFormatByItag,
+  getVideoInfo,
+  isAllowedMediaRedirect,
+  validateYouTubeUrl
+} from "@/lib/youtube";
 import { PublicError } from "@/lib/public-error";
 
 export const runtime = "nodejs";
@@ -30,6 +36,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const token = request.nextUrl.searchParams.get("token")?.trim() ?? "";
+    const streamMode = request.nextUrl.searchParams.get("stream") === "1";
 
     if (!token) {
       throw new PublicError("Link de download invalido.", 400);
@@ -46,6 +53,41 @@ export async function GET(request: NextRequest) {
 
     if (!isAllowedMediaRedirect(format.url)) {
       throw new PublicError("Destino de download bloqueado por seguranca.", 400);
+    }
+
+    if (streamMode) {
+      const upstream = await fetch(format.url, {
+        method: "GET",
+        redirect: "follow",
+        headers: {
+          "User-Agent": "Mozilla/5.0 BaixarYB"
+        }
+      });
+
+      if (!upstream.ok || !upstream.body) {
+        throw new PublicError("Nao foi possivel baixar esse arquivo agora.", 502);
+      }
+
+      const extension = format.container || "bin";
+      const fileName = buildSafeFileName(info.videoDetails.title, extension);
+      const response = new NextResponse(upstream.body, { status: 200 });
+      response.headers.set(
+        "Content-Type",
+        upstream.headers.get("content-type") || "application/octet-stream"
+      );
+      response.headers.set(
+        "Content-Disposition",
+        `attachment; filename="${encodeURIComponent(fileName)}"; filename*=UTF-8''${encodeURIComponent(fileName)}`
+      );
+      response.headers.set("Cache-Control", "no-store, max-age=0");
+
+      const contentLength = upstream.headers.get("content-length");
+
+      if (contentLength) {
+        response.headers.set("Content-Length", contentLength);
+      }
+
+      return applyRateLimitHeaders(response, rate);
     }
 
     const response = NextResponse.redirect(format.url, 302);

@@ -10,6 +10,7 @@ type NormalizedVideoFormat = {
   fps: number | null;
   approxSize: string;
   contentLength: number | null;
+  hasAudio: boolean;
 };
 
 type NormalizedAudioFormat = {
@@ -73,7 +74,8 @@ export async function getVideoInfo(url: string) {
         container: format.container,
         fps: format.fps,
         approxSize: format.approxSize,
-        downloadUrl: `/api/download?token=${encodeURIComponent(createDownloadToken(normalizedUrl, format.itag))}`
+        hasAudio: format.hasAudio,
+        downloadToken: createDownloadToken(normalizedUrl, format.itag)
       })),
       audioFormats: audioFormats.map((format) => ({
         itag: format.itag,
@@ -81,7 +83,7 @@ export async function getVideoInfo(url: string) {
         container: format.container,
         approxSize: format.approxSize,
         audioBitrate: format.audioBitrate,
-        downloadUrl: `/api/download?token=${encodeURIComponent(createDownloadToken(normalizedUrl, format.itag))}`
+        downloadToken: createDownloadToken(normalizedUrl, format.itag)
       }))
     }
   };
@@ -98,15 +100,11 @@ function normalizeVideoFormats(formats: ytdl.videoFormat[]): NormalizedVideoForm
   const map = new Map<string, NormalizedVideoFormat>();
 
   for (const format of formats) {
-    if (!format.hasVideo || !format.hasAudio) {
+    if (!format.hasVideo || !format.qualityLabel || !format.container) {
       continue;
     }
 
-    if (format.container !== "mp4" || !format.qualityLabel) {
-      continue;
-    }
-
-    const key = `${format.qualityLabel}-${format.container}`;
+    const key = format.qualityLabel;
     const current = map.get(key);
     const candidate = {
       itag: format.itag,
@@ -114,10 +112,19 @@ function normalizeVideoFormats(formats: ytdl.videoFormat[]): NormalizedVideoForm
       container: format.container,
       fps: format.fps ?? null,
       approxSize: getApproxSize(format),
-      contentLength: format.contentLength ? Number(format.contentLength) : null
+      contentLength: format.contentLength ? Number(format.contentLength) : null,
+      hasAudio: Boolean(format.hasAudio)
     };
 
-    if (!current || (candidate.contentLength ?? 0) > (current.contentLength ?? 0)) {
+    if (!current) {
+      map.set(key, candidate);
+      continue;
+    }
+
+    const currentScore = getVideoFormatScore(current);
+    const candidateScore = getVideoFormatScore(candidate);
+
+    if (candidateScore > currentScore) {
       map.set(key, candidate);
     }
   }
@@ -133,11 +140,7 @@ function normalizeAudioFormats(formats: ytdl.videoFormat[]): NormalizedAudioForm
   const map = new Map<string, NormalizedAudioFormat>();
 
   for (const format of formats) {
-    if (!format.hasAudio || format.hasVideo) {
-      continue;
-    }
-
-    if (!format.container) {
+    if (!format.hasAudio || format.hasVideo || !format.container) {
       continue;
     }
 
@@ -160,6 +163,25 @@ function normalizeAudioFormats(formats: ytdl.videoFormat[]): NormalizedAudioForm
   }
 
   return Array.from(map.values()).sort((a, b) => (b.audioBitrate ?? 0) - (a.audioBitrate ?? 0));
+}
+
+function getVideoFormatScore(format: {
+  container: string;
+  contentLength: number | null;
+  hasAudio: boolean;
+}) {
+  let score = 0;
+
+  if (format.hasAudio) {
+    score += 10_000_000_000;
+  }
+
+  if (format.container === "mp4") {
+    score += 1_000_000_000;
+  }
+
+  score += format.contentLength ?? 0;
+  return score;
 }
 
 function getApproxSize(format: ytdl.videoFormat) {
@@ -229,6 +251,17 @@ export function isAllowedMediaRedirect(url: string) {
   } catch {
     return false;
   }
+}
+
+export function buildSafeFileName(title: string, extension: string) {
+  const safeTitle = title
+    .replace(/[<>:"/\\|?*\u0000-\u001F]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 120);
+
+  const baseName = safeTitle || "baixaryb";
+  return `${baseName}.${extension}`;
 }
 
 function sanitizeText(value: string, maxLength: number) {
