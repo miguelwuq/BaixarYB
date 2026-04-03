@@ -244,9 +244,25 @@ export function DownloaderCard() {
           </button>
         </form>
 
-        <p className={styles.note}>
-          Use apenas em conteudos que voce tem permissao para baixar.
-        </p>
+        <div className={styles.noteRow}>
+          <p className={styles.note}>
+            Use apenas em conteudos que voce tem permissao para baixar.
+          </p>
+          {video ? (
+            <a href={video.channelUrl} target="_blank" rel="noreferrer" className={styles.noteChannel}>
+              <span className={styles.avatar}>
+                <Image
+                  src={video.channelAvatarUrl}
+                  alt={video.channelName}
+                  fill
+                  sizes="40px"
+                  style={{ objectFit: "cover" }}
+                />
+              </span>
+              <span>{video.channelName}</span>
+            </a>
+          ) : null}
+        </div>
 
         {previewVideoId && !video ? (
           <section className={styles.previewShell}>
@@ -282,21 +298,9 @@ export function DownloaderCard() {
             <div className={styles.content}>
               <div className={styles.metaRow}>
                 <span className={styles.metaChip}>{video.duration}</span>
-                <a href={video.channelUrl} target="_blank" rel="noreferrer" className={styles.channel}>
-                  <span className={styles.avatar}>
-                    <Image
-                      src={video.channelAvatarUrl}
-                      alt={video.channelName}
-                      fill
-                      sizes="40px"
-                      style={{ objectFit: "cover" }}
-                    />
-                  </span>
-                  <span>{video.channelName}</span>
-                  {video.channelVerified ? (
-                    <span className={styles.verified}>Verificado</span>
-                  ) : null}
-                </a>
+                {video.channelVerified ? (
+                  <span className={styles.verified}>Canal verificado</span>
+                ) : null}
               </div>
 
               <h2 className={styles.videoTitle}>{video.title}</h2>

@@ -86,10 +86,31 @@
   cursor: wait;
 }
 
-.note {
+.noteRow {
   margin-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.note {
+  margin: 0;
   color: var(--muted);
   font-size: 14px;
+}
+
+.noteChannel {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 8px 8px;
+  border-radius: 999px;
+  background: rgba(46, 36, 24, 0.06);
+  color: var(--text);
+  font-weight: 600;
+  margin-left: auto;
 }
 
 .previewShell {
@@ -178,17 +199,6 @@
   color: var(--success);
   font-weight: 700;
   font-size: 14px;
-}
-
-.channel {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px 8px 8px;
-  border-radius: 999px;
-  background: rgba(46, 36, 24, 0.06);
-  color: var(--text);
-  font-weight: 600;
 }
 
 .avatar {
@@ -402,6 +412,10 @@
 
   .form {
     grid-template-columns: 1fr;
+  }
+
+  .noteChannel {
+    margin-left: 0;
   }
 
   .button {
