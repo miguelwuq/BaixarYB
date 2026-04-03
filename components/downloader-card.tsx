@@ -221,194 +221,134 @@ export function DownloaderCard() {
 
   return (
     <main className={styles.page}>
-      <section className={styles.hero}>
-        <div className={styles.badge}>Use apenas em conteudos que voce tem permissao para baixar.</div>
-        <div className={styles.heroCopy}>
-          <h1 className={styles.title}>
-            <span className={styles.titleRow}>
-              <span>YouTube</span>
-              <span className={styles.titleBrand}>BaixarYB</span>
-            </span>
-            <span className={styles.titleSubline}>videos e converta para audios</span>
-          </h1>
-          <p className={styles.subtitle}>Cole um link do YouTube para comecar.</p>
-        </div>
+      <div className={styles.layout}>
+        <aside className={styles.adRail}>
+          <div className={styles.adSlot}>
+            <span className={styles.adLabel}>Anuncio</span>
+            <strong className={styles.adTitle}>Google AdSense</strong>
+            <p className={styles.adText}>Espaco lateral esquerdo para vincular o anuncio depois.</p>
+          </div>
+        </aside>
 
-        <form onSubmit={handleSubmit} className={styles.form}>
-          <input
-            type="url"
-            inputMode="url"
-            placeholder="https://www.youtube.com/watch?v=..."
-            value={url}
-            onChange={(event) => setUrl(event.target.value)}
-            className={styles.input}
-            required
-          />
-          <button type="submit" className={styles.button} disabled={loading}>
-            {loading ? "Buscando..." : "Buscar video"}
-          </button>
-        </form>
-
-        <div className={styles.noteRow}>
-          {video ? (
-            <a href={video.channelUrl} target="_blank" rel="noreferrer" className={styles.noteChannel}>
-              <span className={styles.avatar}>
-                <Image
-                  src={video.channelAvatarUrl}
-                  alt={video.channelName}
-                  fill
-                  sizes="40px"
-                  style={{ objectFit: "cover" }}
-                />
+        <section className={styles.hero}>
+          <div className={styles.badge}>Use apenas em conteudos que voce tem permissao para baixar.</div>
+          <div className={styles.heroCopy}>
+            <h1 className={styles.title}>
+              <span className={styles.titleRow}>
+                <span>YouTube</span>
+                <span className={styles.titleBrand}>BaixarYB</span>
               </span>
-              <span>{video.channelName}</span>
-            </a>
-          ) : null}
-        </div>
+              <span className={styles.titleSubline}>videos e converta para audios</span>
+            </h1>
+            <p className={styles.subtitle}>Cole um link do YouTube para comecar.</p>
+          </div>
 
-        {previewVideoId && !video ? (
-          <section className={styles.previewShell}>
-            <div className={styles.playerFrame}>
-              <iframe
-                src={`https://www.youtube-nocookie.com/embed/${previewVideoId}`}
-                title="Preview do video"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              />
-            </div>
-            {loading ? (
-              <div className={styles.previewLoading}>
-                Carregando detalhes do video e opcoes de download...
-              </div>
+          <form onSubmit={handleSubmit} className={styles.form}>
+            <input
+              type="url"
+              inputMode="url"
+              placeholder="https://www.youtube.com/watch?v=..."
+              value={url}
+              onChange={(event) => setUrl(event.target.value)}
+              className={styles.input}
+              required
+            />
+            <button type="submit" className={styles.button} disabled={loading}>
+              {loading ? "Buscando..." : "Buscar video"}
+            </button>
+          </form>
+
+          <div className={styles.noteRow}>
+            {video ? (
+              <a href={video.channelUrl} target="_blank" rel="noreferrer" className={styles.noteChannel}>
+                <span className={styles.avatar}>
+                  <Image
+                    src={video.channelAvatarUrl}
+                    alt={video.channelName}
+                    fill
+                    sizes="40px"
+                    style={{ objectFit: "cover" }}
+                  />
+                </span>
+                <span>{video.channelName}</span>
+              </a>
             ) : null}
-          </section>
-        ) : null}
+          </div>
 
-        {error ? <div className={styles.error}>{error}</div> : null}
+          {previewVideoId && !video ? (
+            <section className={styles.previewShell}>
+              <div className={styles.playerFrame}>
+                <iframe
+                  src={`https://www.youtube-nocookie.com/embed/${previewVideoId}`}
+                  title="Preview do video"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              </div>
+              {loading ? (
+                <div className={styles.previewLoading}>
+                  Carregando detalhes do video e opcoes de download...
+                </div>
+              ) : null}
+            </section>
+          ) : null}
 
-        {video ? (
-          <article className={styles.card}>
-            <div className={styles.preview}>
-              <iframe
-                src={`https://www.youtube-nocookie.com/embed/${video.videoId}`}
-                title={video.title}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              />
-            </div>
+          {error ? <div className={styles.error}>{error}</div> : null}
 
-            <div className={styles.content}>
-              <div className={styles.metaRow}>
-                <span className={styles.metaChip}>{video.duration}</span>
-                {video.channelVerified ? (
-                  <span className={styles.verified}>Canal verificado</span>
-                ) : null}
+          {video ? (
+            <article className={styles.card}>
+              <div className={styles.preview}>
+                <iframe
+                  src={`https://www.youtube-nocookie.com/embed/${video.videoId}`}
+                  title={video.title}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
               </div>
 
-              <h2 className={styles.videoTitle}>{video.title}</h2>
+              <div className={styles.content}>
+                <div className={styles.metaRow}>
+                  <span className={styles.metaChip}>{video.duration}</span>
+                  {video.channelVerified ? (
+                    <span className={styles.verified}>Canal verificado</span>
+                  ) : null}
+                </div>
 
-              <div className={styles.modeTabs}>
-                <button
-                  type="button"
-                  className={downloadMode === "audio" ? styles.modeButtonActive : styles.modeButton}
-                  onClick={() => {
-                    setDownloadMode("audio");
-                    setDownloadState(initialDownloadState);
-                  }}
-                >
-                  Audio
-                </button>
-                <button
-                  type="button"
-                  className={downloadMode === "video" ? styles.modeButtonActive : styles.modeButton}
-                  onClick={() => {
-                    setDownloadMode("video");
-                    setDownloadState(initialDownloadState);
-                  }}
-                >
-                  Video
-                </button>
-              </div>
+                <h2 className={styles.videoTitle}>{video.title}</h2>
 
-              <section className={styles.actionPanel}>
-                {downloadMode === "audio" ? (
-                  bestAudioFormat ? (
-                    <>
-                      <div className={styles.singleDownloadCard}>
-                        <div>
-                          <strong className={styles.downloadHeading}>Melhor audio disponivel</strong>
-                          <p className={styles.downloadText}>
-                            {bestAudioFormat.audioLabel} • {bestAudioFormat.container.toUpperCase()} •{" "}
-                            {bestAudioFormat.approxSize}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          className={styles.downloadPrimary}
-                          disabled={downloadState.status === "downloading"}
-                          onClick={() =>
-                            handleDownload(
-                              bestAudioFormat.downloadToken,
-                              `${video.title} - audio.${bestAudioFormat.container}`
-                            )
-                          }
-                        >
-                          {downloadState.status === "downloading"
-                            ? "Baixando audio..."
-                            : "Baixar audio"}
-                        </button>
-                      </div>
-                      <DownloadProgress state={downloadState} />
-                    </>
-                  ) : (
-                    <p className={styles.emptyState}>
-                      Esse video nao trouxe uma faixa de audio separada para download.
-                    </p>
-                  )
-                ) : (
-                  <>
-                    <div className={styles.sectionHead}>
-                      <h3 className={styles.sectionTitle}>Escolha a qualidade do video</h3>
-                      <span className={styles.sectionHint}>
-                        Da maxima disponivel ate a minima
-                      </span>
-                    </div>
+                <div className={styles.modeTabs}>
+                  <button
+                    type="button"
+                    className={downloadMode === "audio" ? styles.modeButtonActive : styles.modeButton}
+                    onClick={() => {
+                      setDownloadMode("audio");
+                      setDownloadState(initialDownloadState);
+                    }}
+                  >
+                    Audio
+                  </button>
+                  <button
+                    type="button"
+                    className={downloadMode === "video" ? styles.modeButtonActive : styles.modeButton}
+                    onClick={() => {
+                      setDownloadMode("video");
+                      setDownloadState(initialDownloadState);
+                    }}
+                  >
+                    Video
+                  </button>
+                </div>
 
-                    <div className={styles.qualityPicker}>
-                      {video.videoFormats.map((format) => (
-                        <button
-                          type="button"
-                          key={format.itag}
-                          onClick={() => {
-                            setSelectedVideoItag(format.itag);
-                            setDownloadState(initialDownloadState);
-                          }}
-                          className={
-                            selectedVideoFormat?.itag === format.itag
-                              ? styles.qualityOptionActive
-                              : styles.qualityOption
-                          }
-                        >
-                          <strong>{format.qualityLabel}</strong>
-                          <span>{format.container.toUpperCase()}</span>
-                          <span>{format.fps ? `${format.fps} FPS` : "FPS padrao"}</span>
-                          <span>{format.approxSize}</span>
-                          <span>{format.hasAudio ? "Com audio" : "Sem audio"}</span>
-                        </button>
-                      ))}
-                    </div>
-
-                    {selectedVideoFormat ? (
+                <section className={styles.actionPanel}>
+                  {downloadMode === "audio" ? (
+                    bestAudioFormat ? (
                       <>
                         <div className={styles.singleDownloadCard}>
                           <div>
-                            <strong className={styles.downloadHeading}>
-                              Video selecionado: {selectedVideoFormat.qualityLabel}
-                            </strong>
+                            <strong className={styles.downloadHeading}>Melhor audio disponivel</strong>
                             <p className={styles.downloadText}>
-                              {selectedVideoFormat.container.toUpperCase()} •{" "}
-                              {selectedVideoFormat.fps ? `${selectedVideoFormat.fps} FPS` : "FPS padrao"} •{" "}
-                              {selectedVideoFormat.approxSize}
+                              {bestAudioFormat.audioLabel} - {bestAudioFormat.container.toUpperCase()} -{" "}
+                              {bestAudioFormat.approxSize}
                             </p>
                           </div>
                           <button
@@ -417,32 +357,110 @@ export function DownloaderCard() {
                             disabled={downloadState.status === "downloading"}
                             onClick={() =>
                               handleDownload(
-                                selectedVideoFormat.downloadToken,
-                                `${video.title} - ${selectedVideoFormat.qualityLabel}.${selectedVideoFormat.container}`
+                                bestAudioFormat.downloadToken,
+                                `${video.title} - audio.${bestAudioFormat.container}`
                               )
                             }
                           >
                             {downloadState.status === "downloading"
-                              ? "Baixando video..."
-                              : "Baixar video"}
+                              ? "Baixando audio..."
+                              : "Baixar audio"}
                           </button>
                         </div>
-                        {!selectedVideoFormat.hasAudio ? (
-                          <p className={styles.warningText}>
-                            Essa qualidade veio sem audio no mesmo arquivo. Isso acontece em algumas
-                            resolucoes altas do YouTube.
-                          </p>
-                        ) : null}
                         <DownloadProgress state={downloadState} />
                       </>
-                    ) : null}
-                  </>
-                )}
-              </section>
-            </div>
-          </article>
-        ) : null}
-      </section>
+                    ) : (
+                      <p className={styles.emptyState}>
+                        Esse video nao trouxe uma faixa de audio separada para download.
+                      </p>
+                    )
+                  ) : (
+                    <>
+                      <div className={styles.sectionHead}>
+                        <h3 className={styles.sectionTitle}>Escolha a qualidade do video</h3>
+                        <span className={styles.sectionHint}>
+                          Da maxima disponivel ate a minima
+                        </span>
+                      </div>
+
+                      <div className={styles.qualityPicker}>
+                        {video.videoFormats.map((format) => (
+                          <button
+                            type="button"
+                            key={format.itag}
+                            onClick={() => {
+                              setSelectedVideoItag(format.itag);
+                              setDownloadState(initialDownloadState);
+                            }}
+                            className={
+                              selectedVideoFormat?.itag === format.itag
+                                ? styles.qualityOptionActive
+                                : styles.qualityOption
+                            }
+                          >
+                            <strong>{format.qualityLabel}</strong>
+                            <span>{format.container.toUpperCase()}</span>
+                            <span>{format.fps ? `${format.fps} FPS` : "FPS padrao"}</span>
+                            <span>{format.approxSize}</span>
+                            <span>{format.hasAudio ? "Com audio" : "Sem audio"}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      {selectedVideoFormat ? (
+                        <>
+                          <div className={styles.singleDownloadCard}>
+                            <div>
+                              <strong className={styles.downloadHeading}>
+                                Video selecionado: {selectedVideoFormat.qualityLabel}
+                              </strong>
+                              <p className={styles.downloadText}>
+                                {selectedVideoFormat.container.toUpperCase()} -{" "}
+                                {selectedVideoFormat.fps ? `${selectedVideoFormat.fps} FPS` : "FPS padrao"} -{" "}
+                                {selectedVideoFormat.approxSize}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              className={styles.downloadPrimary}
+                              disabled={downloadState.status === "downloading"}
+                              onClick={() =>
+                                handleDownload(
+                                  selectedVideoFormat.downloadToken,
+                                  `${video.title} - ${selectedVideoFormat.qualityLabel}.${selectedVideoFormat.container}`
+                                )
+                              }
+                            >
+                              {downloadState.status === "downloading"
+                                ? "Baixando video..."
+                                : "Baixar video"}
+                            </button>
+                          </div>
+                          {!selectedVideoFormat.hasAudio ? (
+                            <p className={styles.warningText}>
+                              Essa qualidade veio sem audio no mesmo arquivo. Isso acontece em algumas
+                              resolucoes altas do YouTube.
+                            </p>
+                          ) : null}
+                          <DownloadProgress state={downloadState} />
+                        </>
+                      ) : null}
+                    </>
+                  )}
+                </section>
+              </div>
+            </article>
+          ) : null}
+        </section>
+
+        <aside className={styles.adRail}>
+          <div className={styles.adSlot}>
+            <span className={styles.adLabel}>Anuncio</span>
+            <strong className={styles.adTitle}>Google AdSense</strong>
+            <p className={styles.adText}>Espaco lateral direito para vincular o anuncio depois.</p>
+          </div>
+        </aside>
+      </div>
     </main>
   );
 }

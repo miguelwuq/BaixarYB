@@ -5,8 +5,56 @@
   padding: 32px 18px;
 }
 
+.layout {
+  width: min(1440px, 100%);
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1120px) 180px;
+  gap: 18px;
+  align-items: start;
+}
+
+.adRail {
+  position: sticky;
+  top: 20px;
+}
+
+.adSlot {
+  min-height: 620px;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 20px 16px;
+  border-radius: 28px;
+  border: 1px dashed rgba(178, 58, 36, 0.24);
+  background: rgba(255, 251, 244, 0.62);
+  box-shadow: var(--shadow);
+}
+
+.adLabel {
+  display: inline-flex;
+  width: fit-content;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(178, 58, 36, 0.12);
+  color: var(--brand-strong);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.adTitle {
+  font-family: var(--font-heading), sans-serif;
+  font-size: 1.2rem;
+}
+
+.adText {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
 .hero {
-  width: min(1120px, 100%);
+  width: 100%;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 32px;
@@ -116,12 +164,6 @@
   align-items: center;
   gap: 14px;
   flex-wrap: wrap;
-}
-
-.note {
-  margin: 0;
-  color: var(--muted);
-  font-size: 14px;
 }
 
 .noteChannel {
@@ -424,6 +466,16 @@
 
   100% {
     transform: translateX(260%);
+  }
+}
+
+@media (max-width: 1280px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .adRail {
+    display: none;
   }
 }
 
