@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { FormEvent, useState } from "react";
+import { extractYouTubeVideoId } from "@/lib/youtube-link";
 import styles from "./downloader-card.module.css";
 
 type VideoFormat = {
@@ -10,6 +11,15 @@ type VideoFormat = {
   container: string;
   fps: number | null;
   approxSize: string;
+  downloadUrl: string;
+};
+
+type AudioFormat = {
+  itag: number;
+  audioLabel: string;
+  container: string;
+  approxSize: string;
+  audioBitrate: number | null;
   downloadUrl: string;
 };
 
@@ -22,7 +32,8 @@ type VideoResponse = {
   channelVerified: boolean;
   thumbnailUrl: string;
   duration: string;
-  formats: VideoFormat[];
+  videoFormats: VideoFormat[];
+  audioFormats: AudioFormat[];
 };
 
 export function DownloaderCard() {
@@ -30,12 +41,14 @@ export function DownloaderCard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [video, setVideo] = useState<VideoResponse | null>(null);
+  const [previewVideoId, setPreviewVideoId] = useState<string | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
     setError(null);
     setVideo(null);
+    setPreviewVideoId(extractYouTubeVideoId(url));
 
     try {
       const response = await fetch("/api/video-info", {
@@ -53,6 +66,7 @@ export function DownloaderCard() {
       }
 
       setVideo(payload);
+      setPreviewVideoId(payload.videoId);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Ocorreu um erro inesperado.";
@@ -91,17 +105,34 @@ export function DownloaderCard() {
           Use apenas em conteudos que voce tem permissao para baixar.
         </p>
 
+        {previewVideoId && !video ? (
+          <section className={styles.previewShell}>
+            <div className={styles.playerFrame}>
+              <iframe
+                src={`https://www.youtube-nocookie.com/embed/${previewVideoId}`}
+                title="Preview do video"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
+            {loading ? (
+              <div className={styles.previewLoading}>
+                Carregando detalhes do video e opcoes de download...
+              </div>
+            ) : null}
+          </section>
+        ) : null}
+
         {error ? <div className={styles.error}>{error}</div> : null}
 
         {video ? (
           <article className={styles.card}>
             <div className={styles.preview}>
-              <Image
-                src={video.thumbnailUrl}
-                alt={video.title}
-                fill
-                sizes="(max-width: 900px) 100vw, 420px"
-                style={{ objectFit: "cover" }}
+              <iframe
+                src={`https://www.youtube-nocookie.com/embed/${video.videoId}`}
+                title={video.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
               />
             </div>
 
@@ -127,19 +158,52 @@ export function DownloaderCard() {
 
               <h2 className={styles.videoTitle}>{video.title}</h2>
 
-              <div className={styles.qualityGrid}>
-                {video.formats.map((format) => (
-                  <a
-                    key={format.itag}
-                    href={format.downloadUrl}
-                    className={styles.qualityLink}
-                  >
-                    <strong>{format.qualityLabel}</strong>
-                    <span>{format.container.toUpperCase()}</span>
-                    <span>{format.fps ? `${format.fps} FPS` : "FPS padrao"}</span>
-                    <span>{format.approxSize}</span>
-                  </a>
-                ))}
+              <div className={styles.downloadColumns}>
+                <section className={styles.downloadSection}>
+                  <div className={styles.sectionHead}>
+                    <h3 className={styles.sectionTitle}>Qualidade de video</h3>
+                    <span className={styles.sectionHint}>
+                      {video.videoFormats.length} opcoes
+                    </span>
+                  </div>
+                  <div className={styles.qualityGrid}>
+                    {video.videoFormats.map((format) => (
+                      <a
+                        key={format.itag}
+                        href={format.downloadUrl}
+                        className={styles.qualityLink}
+                      >
+                        <strong>{format.qualityLabel}</strong>
+                        <span>{format.container.toUpperCase()}</span>
+                        <span>{format.fps ? `${format.fps} FPS` : "FPS padrao"}</span>
+                        <span>{format.approxSize}</span>
+                      </a>
+                    ))}
+                  </div>
+                </section>
+
+                <section className={styles.downloadSection}>
+                  <div className={styles.sectionHead}>
+                    <h3 className={styles.sectionTitle}>Audio</h3>
+                    <span className={styles.sectionHint}>
+                      {video.audioFormats.length} opcoes
+                    </span>
+                  </div>
+                  <div className={styles.audioGrid}>
+                    {video.audioFormats.map((format) => (
+                      <a
+                        key={format.itag}
+                        href={format.downloadUrl}
+                        className={styles.audioLink}
+                      >
+                        <strong>{format.audioLabel}</strong>
+                        <span>{format.container.toUpperCase()}</span>
+                        <span>{format.audioBitrate ? `${format.audioBitrate} kbps` : "Bitrate padrao"}</span>
+                        <span>{format.approxSize}</span>
+                      </a>
+                    ))}
+                  </div>
+                </section>
               </div>
             </div>
           </article>

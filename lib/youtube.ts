@@ -1,8 +1,9 @@
 import ytdl from "@distube/ytdl-core";
 import { createDownloadToken } from "@/lib/download-token";
 import { PublicError } from "@/lib/public-error";
+import { normalizeYouTubeUrl } from "@/lib/youtube-link";
 
-type NormalizedFormat = {
+type NormalizedVideoFormat = {
   itag: number;
   qualityLabel: string;
   container: string;
@@ -11,30 +12,44 @@ type NormalizedFormat = {
   contentLength: number | null;
 };
 
+type NormalizedAudioFormat = {
+  itag: number;
+  audioLabel: string;
+  container: string;
+  approxSize: string;
+  audioBitrate: number | null;
+  contentLength: number | null;
+};
+
 export function validateYouTubeUrl(url: string) {
   if (url.length > 500) {
     throw new PublicError("A URL informada e longa demais.", 400);
   }
 
-  if (!ytdl.validateURL(url)) {
+  const normalizedUrl = normalizeYouTubeUrl(url);
+
+  if (!ytdl.validateURL(normalizedUrl)) {
     throw new PublicError("Informe uma URL valida do YouTube.", 400);
   }
+
+  return normalizedUrl;
 }
 
 export async function getVideoInfo(url: string) {
-  validateYouTubeUrl(url);
+  const normalizedUrl = validateYouTubeUrl(url);
   let info: ytdl.videoInfo;
 
   try {
-    info = await ytdl.getInfo(url);
+    info = await ytdl.getInfo(normalizedUrl);
   } catch {
     throw new PublicError("Nao foi possivel consultar esse video agora.", 502);
   }
 
   const details = info.videoDetails;
-  const formats = normalizeFormats(info.formats);
+  const videoFormats = normalizeVideoFormats(info.formats);
+  const audioFormats = normalizeAudioFormats(info.formats);
 
-  if (formats.length === 0) {
+  if (videoFormats.length === 0 && audioFormats.length === 0) {
     throw new PublicError("Nenhuma opcao de qualidade compativel foi encontrada.", 404);
   }
 
@@ -45,21 +60,28 @@ export async function getVideoInfo(url: string) {
       title: sanitizeText(details.title, 160),
       channelName: sanitizeText(details.author.name, 80),
       channelUrl: sanitizeExternalUrl(details.author.channel_url),
-      channelAvatarUrl:
-        sanitizeImageUrl(
-          details.author.thumbnails?.slice().sort((a, b) => b.width - a.width)[0]?.url ??
-            details.author.avatar
-        ),
+      channelAvatarUrl: sanitizeImageUrl(
+        details.author.thumbnails?.slice().sort((a, b) => b.width - a.width)[0]?.url ??
+          details.author.avatar
+      ),
       channelVerified: details.author.verified,
       thumbnailUrl: getBestThumbnail(details.thumbnails),
       duration: formatDuration(Number(details.lengthSeconds)),
-      formats: formats.map((format) => ({
+      videoFormats: videoFormats.map((format) => ({
         itag: format.itag,
         qualityLabel: format.qualityLabel,
         container: format.container,
         fps: format.fps,
         approxSize: format.approxSize,
-        downloadUrl: `/api/download?token=${encodeURIComponent(createDownloadToken(url, format.itag))}`
+        downloadUrl: `/api/download?token=${encodeURIComponent(createDownloadToken(normalizedUrl, format.itag))}`
+      })),
+      audioFormats: audioFormats.map((format) => ({
+        itag: format.itag,
+        audioLabel: format.audioLabel,
+        container: format.container,
+        approxSize: format.approxSize,
+        audioBitrate: format.audioBitrate,
+        downloadUrl: `/api/download?token=${encodeURIComponent(createDownloadToken(normalizedUrl, format.itag))}`
       }))
     }
   };
@@ -72,8 +94,8 @@ export function findFormatByItag(
   return formats.find((format) => format.itag === itag);
 }
 
-function normalizeFormats(formats: ytdl.videoFormat[]): NormalizedFormat[] {
-  const map = new Map<string, NormalizedFormat>();
+function normalizeVideoFormats(formats: ytdl.videoFormat[]): NormalizedVideoFormat[] {
+  const map = new Map<string, NormalizedVideoFormat>();
 
   for (const format of formats) {
     if (!format.hasVideo || !format.hasAudio) {
@@ -105,6 +127,39 @@ function normalizeFormats(formats: ytdl.videoFormat[]): NormalizedFormat[] {
     const bValue = Number.parseInt(b.qualityLabel, 10);
     return bValue - aValue;
   });
+}
+
+function normalizeAudioFormats(formats: ytdl.videoFormat[]): NormalizedAudioFormat[] {
+  const map = new Map<string, NormalizedAudioFormat>();
+
+  for (const format of formats) {
+    if (!format.hasAudio || format.hasVideo) {
+      continue;
+    }
+
+    if (!format.container) {
+      continue;
+    }
+
+    const fallbackBitrate = Math.round((format.bitrate ?? 0) / 1000);
+    const bitrate = format.audioBitrate ?? (fallbackBitrate || null);
+    const key = `${format.container}-${bitrate ?? "unknown"}`;
+    const current = map.get(key);
+    const candidate = {
+      itag: format.itag,
+      audioLabel: bitrate ? `${bitrate} kbps` : "Audio padrao",
+      container: format.container,
+      approxSize: getApproxSize(format),
+      audioBitrate: bitrate,
+      contentLength: format.contentLength ? Number(format.contentLength) : null
+    };
+
+    if (!current || (candidate.contentLength ?? 0) > (current.contentLength ?? 0)) {
+      map.set(key, candidate);
+    }
+  }
+
+  return Array.from(map.values()).sort((a, b) => (b.audioBitrate ?? 0) - (a.audioBitrate ?? 0));
 }
 
 function getApproxSize(format: ytdl.videoFormat) {
