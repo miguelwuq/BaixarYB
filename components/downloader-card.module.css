@@ -17,14 +17,14 @@
 
 .badge {
   display: inline-flex;
-  padding: 8px 12px;
+  padding: 10px 16px;
   border-radius: 999px;
   background: var(--brand-soft);
   color: var(--brand-strong);
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  font-size: 12px;
+  letter-spacing: 0.01em;
+  font-size: 0.92rem;
+  max-width: min(100%, 520px);
 }
 
 .heroCopy {

@@ -222,7 +222,7 @@ export function DownloaderCard() {
   return (
     <main className={styles.page}>
       <section className={styles.hero}>
-        <div className={styles.badge}>BaixarYB</div>
+        <div className={styles.badge}>Use apenas em conteudos que voce tem permissao para baixar.</div>
         <div className={styles.heroCopy}>
           <h1 className={styles.title}>
             <span className={styles.titleRow}>
@@ -250,9 +250,6 @@ export function DownloaderCard() {
         </form>
 
         <div className={styles.noteRow}>
-          <p className={styles.note}>
-            Use apenas em conteudos que voce tem permissao para baixar.
-          </p>
           {video ? (
             <a href={video.channelUrl} target="_blank" rel="noreferrer" className={styles.noteChannel}>
               <span className={styles.avatar}>
