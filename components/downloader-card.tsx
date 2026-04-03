@@ -223,11 +223,16 @@ export function DownloaderCard() {
     <main className={styles.page}>
       <section className={styles.hero}>
         <div className={styles.badge}>BaixarYB</div>
-        <h1 className={styles.title}>Baixe videos do YouTube com qualidade escolhida</h1>
-        <p className={styles.subtitle}>
-          Cole o link, veja a capa, o nome do canal e escolha a qualidade de
-          download disponivel.
-        </p>
+        <div className={styles.heroCopy}>
+          <h1 className={styles.title}>
+            <span className={styles.titleRow}>
+              <span>YouTube</span>
+              <span className={styles.titleBrand}>BaixarYB</span>
+            </span>
+            <span className={styles.titleSubline}>videos e converta para audios</span>
+          </h1>
+          <p className={styles.subtitle}>Cole um link do YouTube para comecar.</p>
+        </div>
 
         <form onSubmit={handleSubmit} className={styles.form}>
           <input

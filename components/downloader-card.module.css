@@ -27,18 +27,41 @@
   font-size: 12px;
 }
 
+.heroCopy {
+  display: grid;
+  gap: 12px;
+}
+
 .title {
   font-size: clamp(2.3rem, 6vw, 4.6rem);
   line-height: 0.98;
   margin: 18px 0 12px;
-  max-width: 12ch;
+  max-width: 14ch;
+}
+
+.titleRow {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.titleBrand {
+  color: var(--brand-strong);
+}
+
+.titleSubline {
+  display: block;
+  margin-top: 10px;
+  font-size: clamp(1.4rem, 3vw, 2.2rem);
+  color: var(--muted);
 }
 
 .subtitle {
   margin: 0;
   max-width: 700px;
   color: var(--muted);
-  font-size: 1.08rem;
+  font-size: 0.98rem;
   line-height: 1.6;
 }
 
