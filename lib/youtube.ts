@@ -70,8 +70,14 @@ export async function getVideoInfo(url: string) {
   }
 
   const basicInfo = info.basic_info;
-  const videoFormats = normalizeVideoFormats(info.streaming_data);
-  const audioFormats = normalizeAudioFormats(info.streaming_data);
+  let videoFormats = normalizeVideoFormats(info.streaming_data);
+  let audioFormats = normalizeAudioFormats(info.streaming_data);
+
+  if (videoFormats.length === 0 && audioFormats.length === 0) {
+    const downloadInfo = await getDownloadInfo(normalizedUrl);
+    videoFormats = normalizeYtdlVideoFormats(downloadInfo.formats);
+    audioFormats = normalizeYtdlAudioFormats(downloadInfo.formats);
+  }
 
   if (videoFormats.length === 0 && audioFormats.length === 0) {
     throw new PublicError("Nenhuma opcao de qualidade compativel foi encontrada.", 404);
@@ -257,6 +263,86 @@ function normalizeAudioFormats(
         typeof rawFormat.content_length === "number"
           ? rawFormat.content_length
           : Number(rawFormat.content_length || 0) || null
+    };
+
+    if (!current || (candidate.contentLength ?? 0) > (current.contentLength ?? 0)) {
+      map.set(key, candidate);
+    }
+  }
+
+  return Array.from(map.values()).sort((a, b) => (b.audioBitrate ?? 0) - (a.audioBitrate ?? 0));
+}
+
+function normalizeYtdlVideoFormats(formats: ytdl.videoFormat[]): NormalizedVideoFormat[] {
+  const map = new Map<string, NormalizedVideoFormat>();
+
+  for (const format of formats) {
+    if (!format.hasVideo || !format.qualityLabel || !format.url) {
+      continue;
+    }
+
+    const container = format.container || getContainerFromMimeType(format.mimeType || null);
+
+    if (!container) {
+      continue;
+    }
+
+    const key = format.qualityLabel;
+    const current = map.get(key);
+    const candidate = {
+      itag: format.itag,
+      qualityLabel: format.qualityLabel,
+      container,
+      fps: format.fps ?? null,
+      approxSize: getApproxSize({
+        contentLength: format.contentLength ? Number(format.contentLength) : 0,
+        bitrate: format.bitrate ?? 0,
+        approxDurationMs: Number(format.approxDurationMs ?? 0)
+      }),
+      contentLength: format.contentLength ? Number(format.contentLength) : null,
+      hasAudio: Boolean(format.hasAudio)
+    };
+
+    if (!current || getVideoFormatScore(candidate) > getVideoFormatScore(current)) {
+      map.set(key, candidate);
+    }
+  }
+
+  return Array.from(map.values()).sort((a, b) => {
+    const aValue = Number.parseInt(a.qualityLabel, 10);
+    const bValue = Number.parseInt(b.qualityLabel, 10);
+    return bValue - aValue;
+  });
+}
+
+function normalizeYtdlAudioFormats(formats: ytdl.videoFormat[]): NormalizedAudioFormat[] {
+  const map = new Map<string, NormalizedAudioFormat>();
+
+  for (const format of formats) {
+    if (!format.hasAudio || format.hasVideo || !format.url) {
+      continue;
+    }
+
+    const container = format.container || getContainerFromMimeType(format.mimeType || null);
+
+    if (!container) {
+      continue;
+    }
+
+    const bitrateLabel = format.audioBitrate ?? (format.bitrate ? Math.round(format.bitrate / 1000) : null);
+    const key = `${container}-${bitrateLabel ?? "default"}`;
+    const current = map.get(key);
+    const candidate = {
+      itag: format.itag,
+      audioLabel: bitrateLabel ? `${bitrateLabel} kbps` : "Audio padrao",
+      container,
+      approxSize: getApproxSize({
+        contentLength: format.contentLength ? Number(format.contentLength) : 0,
+        bitrate: format.bitrate ?? 0,
+        approxDurationMs: Number(format.approxDurationMs ?? 0)
+      }),
+      audioBitrate: bitrateLabel,
+      contentLength: format.contentLength ? Number(format.contentLength) : null
     };
 
     if (!current || (candidate.contentLength ?? 0) > (current.contentLength ?? 0)) {
