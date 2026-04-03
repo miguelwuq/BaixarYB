@@ -15,7 +15,10 @@ const bodyFont = IBM_Plex_Sans({
 
 export const metadata: Metadata = {
   title: "BaixarYB",
-  description: "Baixador de videos do YouTube com opcoes de qualidade."
+  description: "Baixador de videos do YouTube com opcoes de qualidade.",
+  icons: {
+    icon: "/icon.svg"
+  }
 };
 
 export default function RootLayout({
