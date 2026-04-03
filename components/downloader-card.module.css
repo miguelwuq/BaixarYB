@@ -1,0 +1,228 @@
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 18px;
+}
+
+.hero {
+  width: min(1120px, 100%);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 32px;
+  padding: 32px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+}
+
+.badge {
+  display: inline-flex;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+.title {
+  font-size: clamp(2.3rem, 6vw, 4.6rem);
+  line-height: 0.98;
+  margin: 18px 0 12px;
+  max-width: 12ch;
+}
+
+.subtitle {
+  margin: 0;
+  max-width: 700px;
+  color: var(--muted);
+  font-size: 1.08rem;
+  line-height: 1.6;
+}
+
+.form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.input {
+  width: 100%;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  padding: 18px 20px;
+  background: rgba(255, 255, 255, 0.76);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input:focus {
+  border-color: rgba(178, 58, 36, 0.45);
+  box-shadow: 0 0 0 4px rgba(178, 58, 36, 0.12);
+}
+
+.button {
+  border: none;
+  border-radius: 18px;
+  padding: 0 22px;
+  min-height: 58px;
+  background: linear-gradient(180deg, var(--brand), var(--brand-strong));
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+}
+
+.button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 28px rgba(143, 44, 27, 0.22);
+}
+
+.button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.note {
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.error {
+  margin-top: 18px;
+  padding: 14px 16px;
+  background: rgba(178, 58, 36, 0.1);
+  color: var(--brand-strong);
+  border-radius: 16px;
+  border: 1px solid rgba(178, 58, 36, 0.18);
+}
+
+.card {
+  margin-top: 28px;
+  display: grid;
+  grid-template-columns: minmax(280px, 420px) minmax(0, 1fr);
+  gap: 24px;
+  padding: 18px;
+  border-radius: 28px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.preview {
+  position: relative;
+  min-height: 260px;
+  border-radius: 22px;
+  overflow: hidden;
+  background:
+    linear-gradient(160deg, rgba(178, 58, 36, 0.18), rgba(255, 214, 153, 0.34)),
+    #d7c2a1;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.metaChip {
+  display: inline-flex;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(45, 106, 79, 0.12);
+  color: var(--success);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.channel {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 8px 8px;
+  border-radius: 999px;
+  background: rgba(46, 36, 24, 0.06);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.avatar {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  overflow: hidden;
+  flex: 0 0 auto;
+  background: rgba(46, 36, 24, 0.12);
+}
+
+.verified {
+  color: var(--success);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.videoTitle {
+  margin: 0;
+  font-size: clamp(1.4rem, 4vw, 2.2rem);
+  line-height: 1.15;
+}
+
+.qualityGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.qualityLink {
+  display: grid;
+  gap: 5px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.85);
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.qualityLink:hover {
+  transform: translateY(-2px);
+  border-color: rgba(178, 58, 36, 0.35);
+  box-shadow: 0 14px 24px rgba(82, 59, 27, 0.08);
+}
+
+@media (max-width: 900px) {
+  .card {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .hero {
+    padding: 22px;
+    border-radius: 24px;
+  }
+
+  .form {
+    grid-template-columns: 1fr;
+  }
+
+  .button {
+    min-height: 54px;
+  }
+
+  .title {
+    max-width: none;
+  }
+}
